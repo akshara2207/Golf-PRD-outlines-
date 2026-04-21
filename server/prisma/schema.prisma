@@ -1,0 +1,181 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int       @id @default(autoincrement())
+  email         String    @unique
+  password      String
+  fullName      String
+  handicap      Float     @default(0)
+  role          UserRole  @default(USER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  subscription  Subscription?
+  scores        Score[]
+  charityPref   UserCharityPreference?
+  drawResults   DrawResult[]
+  auditLogs     AuditLog[]
+  notifications Notification[]
+}
+
+model Subscription {
+  id                    Int               @id @default(autoincrement())
+  userId                Int               @unique
+  planType              PlanType
+  status                SubscriptionStatus @default(ACTIVE)
+  stripeCustomerId      String?
+  stripeSubscriptionId  String?
+  currentPeriodStart    DateTime?
+  currentPeriodEnd      DateTime?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  user                  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Score {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  courseName      String
+  stablefordPoints Int
+  playedDate      DateTime
+  enteredAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([enteredAt])
+}
+
+model Charity {
+  id                  Int    @id @default(autoincrement())
+  name                String
+  registrationNumber  String?
+  description         String?
+  logoUrl             String?
+  isVerified          Boolean @default(false)
+  isActive            Boolean @default(true)
+  totalDonations      Float   @default(0)
+  createdAt           DateTime @default(now())
+
+  userPrefs           UserCharityPreference[]
+}
+
+model UserCharityPreference {
+  id                    Int     @id @default(autoincrement())
+  userId                Int     @unique
+  charityId             Int
+  contributionPercentage Float  @default(10)
+
+  user                  User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  charity               Charity @relation(fields: [charityId], references: [id], onDelete: Cascade)
+}
+
+model Draw {
+  id                Int      @id @default(autoincrement())
+  drawDate          DateTime
+  totalPool         Float    @default(0)
+  tier1Pool         Float    @default(0)
+  tier2Pool         Float    @default(0)
+  tier3Pool         Float    @default(0)
+  rolledOverJackpot Float    @default(0)
+  status            DrawStatus @default(PENDING)
+  drawLogic         String   @default("RANDOM")
+  randomSeed        String?
+  createdAt         DateTime @default(now())
+
+  results     DrawResult[]
+}
+
+model DrawResult {
+  id                  Int              @id @default(autoincrement())
+  drawId              Int
+  userId              Int
+  tier                DrawTier
+  prizeAmount         Float
+  verificationStatus  VerificationStatus @default(PENDING)
+  payoutStatus        PayoutStatus       @default(PENDING)
+  proofUrl            String?
+  proofDescription    String?
+  createdAt           DateTime           @default(now())
+
+  draw                Draw             @relation(fields: [drawId], references: [id], onDelete: Cascade)
+  user                User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([drawId])
+}
+
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  adminId     Int
+  action      String
+  entityType  String
+  entityId    Int?
+  details     String?
+  createdAt   DateTime @default(now())
+
+  admin       User     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  type        String
+  title       String
+  message     String
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum PlanType {
+  MONTHLY
+  YEARLY
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  PAST_DUE
+  EXPIRED
+}
+
+enum DrawStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  PUBLISHED
+  CANCELLED
+}
+
+enum DrawTier {
+  TIER_1
+  TIER_2
+  TIER_3
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+}

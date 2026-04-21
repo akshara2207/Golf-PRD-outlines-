@@ -1,0 +1,20 @@
+{
+  "name": "golf-platform",
+  "version": "1.0.0",
+  "description": "Digital Heroes Golf Platform - Full Stack Application",
+  "scripts": {
+    "install:all": "npm install --prefix server && npm install --prefix client",
+    "build": "cd client && npm run build",
+    "start": "cd server && npm start",
+    "dev": "concurrently \"cd server && npm run dev\" \"cd client && npm run dev\"",
+    "db:seed": "cd server && node prisma/seed.js",
+    "db:migrate": "cd server && npx prisma migrate dev",
+    "db:generate": "cd server && npx prisma generate"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": ["golf", "fullstack", "react", "express", "prisma"],
+  "author": "Digital Heroes",
+  "license": "ISC"
+}
